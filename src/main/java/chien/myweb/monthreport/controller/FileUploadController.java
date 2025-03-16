@@ -94,6 +94,5 @@ public class FileUploadController {
             String message = "檔案上傳失敗: " + file.getOriginalFilename();
             return ResponseEntity.ok().body(message);
         }
-
     }
 }
