@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+	<meta charset="UTF-8">
+	<title>檔案上傳</title>
+	<script src="https://code.jquery.com/jquery-3.6.3.min.js"></script>
+	<link rel="stylesheet" type="text/css" href="/css/uploadStyle.css">
+</head>
+<body>
+	<h2>BQC進料動態表匯入</h2>
+	<hr>
+	<div>
+
+	    <form id="uploadForm">
+	    	
+	    	<div class="radioDiv">
+		    	<input type="radio" name="radio" id="msRadio" value="MS" >
+				<label for="msRadio">MS</label><br>
+	
+				<input type="radio" name="radio" id="nfRadio" value="NF" >
+				<label for="nfRadio">NF</label><br>
+		
+				<input type="radio" name="radio" id="bhRadio" value="BH" >
+				<label for="bhRadio">BH</label><br><br>
+			</div>
+			
+			<div class="selectBtnDiv">
+		    	1. <input type="file" id="file" name="file" class="selectBtn" multiple required> 
+		    </div>
+
+	    </form>
+	    
+	    <div class="uploadBtnDiv">
+	    	2. <button id="uploadFileBtn" class="uploadBtn">上傳檔案</button>
+	    </div>
+	        
+	    <div class="inputBtnDiv">
+	    	3. <button id="inputBtn" class="inputBtn">開始匯入</button>
+	    </div>
+	    
+	    <div class="downloadBtnDiv">
+	    	4. <span><button id="downloadBtn1" class="downloadBtn1">下載動態表</button></span>
+	    		<span><button id="downloadBtn2" class="downloadBtn2">下載處理後的資料</button></span>
+	    </div>
+
+	     <div id="messageDiv" class="messageDiv"></div>
+    
+    </div>
+    
+
+<script type="text/javascript">
+
+	$("#uploadFileBtn").on("click", function () {
+		
+		// 取得選取按鈕的值
+        var selectedFileType = document.querySelector('input[name="radio"]:checked');  
+        if (!selectedFileType) {
+            alert("請選擇機種");
+            return;
+        }
+		
+		var product = $("[name='radio']:checked").val();
+		console.log(product);
+		
+        var formData = new FormData($("#uploadForm")[0]);
+		
+        $.ajax({
+        	type: "POST",
+            url: '/bqc/upload',
+            contentType: false,
+            async: false, 
+            cache: false,
+            processData: false,
+            data: formData,
+            success: function (data) {
+            	// 顯示成功訊息
+            	console.log(data);
+                var message = document.getElementById("messageDiv");
+				message.innerHTML +=  data + "<br>";
+           },
+           error: function (xhr, status, error) {
+           		// 顯示錯誤訊息
+           		console.log(error);
+			}
+        });
+	});
+	
+	$("#inputBtn").on("click", function () {
+
+		// 取得選取按鈕的值
+        var selectedFileType = document.querySelector('input[name="radio"]:checked');    
+        if (!selectedFileType) {
+            alert("請選擇機種");
+            return;
+        }
+		
+		var message = document.getElementById("messageDiv");
+		message.innerHTML +=  "處理中...請稍後!!<br>";
+		
+		setTimeout(function() {
+			var formData = new FormData($("#uploadForm")[0]);
+			
+			$.ajax({
+				type: "POST",
+				url: '/monthreport/runPythonFile',
+		        contentType: false,
+		        async: false, 
+		        cache: false,
+		        processData: false,
+		        data: formData,
+		        success: function (data) {
+		        	// 顯示成功訊息
+		            console.log(data);
+					message.innerHTML +=  data + "<br>";
+		        },
+		        error: function (xhr, status, error) {
+		        	// 顯示錯誤訊息
+		           	console.log(error);
+				}
+			});
+		    
+		}, 1000);
+		
+		
+	});
+	
+	$("#downloadBtn1").on("click", function () {
+		
+		// 取得選取按鈕的值
+        var selectedFileType = document.querySelector('input[name="radio"]:checked');
+
+        if (!selectedFileType) {
+            alert("請選擇機種");
+            return;
+        }
+     	// 將選取按鈕的值放入formData變數中
+        var formData = new FormData();
+        formData.append('type', selectedFileType.value);
+        
+        var downloadUrl = "/bqc/downloadReport"; //請求後端的URL
+	
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', downloadUrl, true);
+        xhr.responseType = 'blob';
+
+        xhr.onload = function () {
+
+            if (xhr.status === 200) {
+                var blob = new Blob([xhr.response], {type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+                //console.log(xhr.response);
+                var link = document.createElement("a");
+                link.href = window.URL.createObjectURL(blob);
+                link.download = "動態表.xlsx";
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } else {
+                console.error("下載失敗");
+            }
+        };
+
+        xhr.send(formData);
+        
+	});
+	
+	$("#downloadBtn2").on("click", function () {
+		
+		// 取得選取按鈕的值
+        var selectedFileType = document.querySelector('input[name="radio"]:checked');
+
+        if (!selectedFileType) {
+            alert("請選擇機種");
+            return;
+        }
+     	// 將選取按鈕的值放入formData變數中
+        var formData = new FormData();
+        formData.append('type', selectedFileType.value);
+        
+        var downloadUrl = "/bqc/downloadData"; //請求後端的URL
+	
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', downloadUrl, true);
+        xhr.responseType = 'blob';
+
+        xhr.onload = function () {
+
+            if (xhr.status === 200) {
+                var blob = new Blob([xhr.response], {type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+                //console.log(xhr.response);
+                var link = document.createElement("a");
+                link.href = window.URL.createObjectURL(blob);
+                link.download = "月報表資料.xlsx";
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } else {
+                console.error("下載失敗");
+            }
+        };
+
+        xhr.send(formData);
+        
+	});
+
+	
+</script>
+ 
+</body>
+</html>
